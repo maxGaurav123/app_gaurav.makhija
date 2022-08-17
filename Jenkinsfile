@@ -11,5 +11,10 @@ pipeline {
                 git branch: 'develop', changelog: false, poll: false, url: 'https://github.com/maxGaurav123/app_gaurav.makhija.git'
             }
         }
+        stage('Nuget restore') {
+            steps {
+                bat 'dotnet restore'
+            }
+        }
     }
 }
