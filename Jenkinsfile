@@ -1,6 +1,12 @@
 pipeline {
     agent any
     
+    environment {
+        scannerHome = tool name: 'sonar_scanner_dotnet'
+        username = 'admin'
+        appName = 'SampleApp'
+    }
+
     tools {
         git 'Default'
     }
@@ -14,6 +20,13 @@ pipeline {
         stage('Nuget restore') {
             steps {
                 bat 'dotnet restore'
+            }
+        }
+        stage('Start sonarqube analysis') {
+            steps {
+                withSonarQubeEnv('Test_Sonar') {
+                    bat "${scannerHome}\\SonarScanner.MSBuild.exe begin /k:\"sonar-gauravmakhija\" /d:sonar.verbose=true"
+                }
             }
         }
     }
