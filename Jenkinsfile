@@ -1,9 +1,9 @@
 pipeline {
     agent any
-    
+
     environment {
         scannerHome = tool name: 'sonar_scanner_dotnet'
-        userName = 'admin'
+        username = 'admin'
         appName = 'SampleApp'
     }
 
@@ -24,23 +24,24 @@ pipeline {
         }
         stage('Start sonarqube analysis') {
             steps {
+                echo "Starting Sonarqube Analysis"
                 withSonarQubeEnv('Test_Sonar') {
-                    bat "${scannerHome}\\SonarScanner.MSBuild.exe begin /k:\"sonar-gauravmakhija\" /d:sonar.verbose=true -d:sonar.cs.xunit.reportpath='Tests/TestResults/sonar-gauravmakhija.xml'"
+                    bat "${scannerHome}\\SonarScanner.MSBuild.exe begin /k:\"sonar-gauravmakhija\" /d:sonar.verbose=true"
                 }
             }
         }
-        stage('Code build') {
+        stage('Build') {
             steps {
                 bat "dotnet build"
             }
         }
-        stage('Test case execution') {
+        stage('Test') {
             steps {
                 echo 'Testing..'
                 bat 'dotnet test -l:trx;LogFileName=NAGPDevOpsTestOutput.xml'
             }
         }
-        stage("Stop sonarqube analysis") {
+         stage("Stop Sonarqube Analysis") {
             steps {
                 echo "Stopping Sonarqube Analysis"
                 withSonarQubeEnv('SonarQube') {
@@ -52,6 +53,14 @@ pipeline {
             steps {
                 echo "Release artifact step"
                 bat "dotnet publish -c Release -o ${appName}/app/${userName}"
+            }
+        }
+        stage("Kubernetes deployment") {
+             steps {
+                bat 'gcloud compute zones list'
+                bat 'gcloud config set project gothic-dreamer-358719'
+                bat 'gcloud container clusters get-credentials kubernetes-demo --zone us-central1-c --project gothic-dreamer-358719'
+                bat 'kubectl apply -f deploymentAndService.yaml'
             }
         }
     }

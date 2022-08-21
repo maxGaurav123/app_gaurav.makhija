@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using nagp_devops_us.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -39,6 +40,11 @@ namespace nagp_devops_us.Controllers
            //Added for coverage
            Console.WriteLine("coverage");
             return val;
+        }
+
+        public IDictionary Envs()
+        {
+            return Environment.GetEnvironmentVariables();
         }
     }
 }

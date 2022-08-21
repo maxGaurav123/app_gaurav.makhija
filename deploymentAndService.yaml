@@ -1,0 +1,62 @@
+# start - deployent using config maps and secret info
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core-app-deployment
+  namespace: gaurav-k8s
+  labels:
+    app: core-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: core-app
+  template:
+    metadata:
+      labels:
+        app: core-app
+    spec:
+      containers:
+        - name: core-app
+          image: gauravmakhija9/i-gauravmakhija-develop:latest
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          envFrom:
+          # short cut to use all the config map values 
+          - configMapRef:
+              name: special-config
+          # -secretRef:
+          #   name: 
+          # resources:
+          #   requests:
+          #     memory: "250Mi"
+          #     cpu: "250m"
+          #   limits:
+          #     memory: "500Mi"
+          #     cpu: "500m"
+
+# end - deployent using config maps and secret info
+---
+#-- start - using load balancer
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: coreapp-lb-service
+  namespace: gaurav-k8s
+  labels:
+    app: core-app-lb
+spec:
+  type: LoadBalancer
+  selector:
+    app: core-app
+    # pod: node-app
+  ports:
+  - protocol: "TCP"
+    targetPort: 5000
+    port: 80
+  
+
+#-- end - using load balancer
