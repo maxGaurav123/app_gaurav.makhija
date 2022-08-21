@@ -1,13 +1,13 @@
-# start - deployent using config maps and secret info
+# start - deployent
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: core-app-deployment
-  namespace: gaurav-k8s
+  namespace: kubernetes-cluster-gauravmakhija
   labels:
     app: core-app
 spec:
-  replicas: 3
+  replicas: 4
   selector:
     matchLabels:
       app: core-app
@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: core-app
-          image: gauravmakhija9/i-gauravmakhija-develop:latest
+          image: gauravmakhija9/i-gauravmakhija-tagBranch:latest
           ports:
             - name: http
               containerPort: 5000
@@ -27,8 +27,8 @@ spec:
           # short cut to use all the config map values 
           - configMapRef:
               name: special-config
-          # -secretRef:
-          #   name: 
+          - secretRef:
+              name: secret-info
           # resources:
           #   requests:
           #     memory: "250Mi"
@@ -37,26 +37,46 @@ spec:
           #     memory: "500Mi"
           #     cpu: "500m"
 
-# end - deployent using config maps and secret info
+# end - deployent
+
 ---
+
 #-- start - using load balancer
 
 apiVersion: v1
 kind: Service
 metadata:
   name: coreapp-lb-service
-  namespace: gaurav-k8s
+  namespace: kubernetes-cluster-gauravmakhija
   labels:
     app: core-app-lb
 spec:
   type: LoadBalancer
   selector:
     app: core-app
-    # pod: node-app
   ports:
   - protocol: "TCP"
     targetPort: 5000
     port: 80
   
-
 #-- end - using load balancer
+
+---
+
+#-- start - using horizontal pod scaling
+
+apiVersion:  autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  namespace: kubernetes-cluster-gauravmakhija
+  name: core-app-deployment-autoscale
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: deployment
+    name: core-app-deployment
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+#-- end - using horizontal pod scaling

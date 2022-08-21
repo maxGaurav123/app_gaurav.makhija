@@ -3,9 +3,19 @@ pipeline {
 
     environment {
         scannerHome = tool name: 'sonar_scanner_dotnet'
+        sonarProjectKey = 'sonar-gauravmakhija'
         username = 'admin'
         appName = 'SampleApp'
+        kubernetesCluster = 'kubernetes-demo'
+        kubernetesProjectId = 'gothic-dreamer-358719'
     }
+
+    options {
+	  buildDiscarder logRotator(daysToKeepStr: '15', numToKeepStr: '10')
+	  disableConcurrentBuilds()
+	  timeout(time: 1, unit: 'HOURS')
+	  timestamps()
+	}
 
     tools {
         git 'Default'
@@ -14,7 +24,8 @@ pipeline {
     stages {
         stage('Start') {
             steps {
-                git branch: 'develop', changelog: false, poll: false, url: 'https://github.com/maxGaurav123/app_gaurav.makhija.git'
+                echo 'Pulling...' + env.BRANCH_NAME
+                git branch: ${env.BRANCH_NAME}, changelog: false, poll: false, url: 'https://github.com/maxGaurav123/app_gaurav.makhija.git'
             }
         }
         stage('Nuget restore') {
@@ -23,10 +34,13 @@ pipeline {
             }
         }
         stage('Start sonarqube analysis') {
+            when {
+				branch 'master'
+			}
             steps {
                 echo "Starting Sonarqube Analysis"
                 withSonarQubeEnv('Test_Sonar') {
-                    bat "${scannerHome}\\SonarScanner.MSBuild.exe begin /k:\"sonar-gauravmakhija\" /d:sonar.verbose=true"
+                    bat "${scannerHome}\\SonarScanner.MSBuild.exe begin /k:\"${sonarProjectKey}\" /d:sonar.verbose=true"
                 }
             }
         }
@@ -38,10 +52,13 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Testing..'
-                bat 'dotnet test -l:trx;LogFileName=NAGPDevOpsTestOutput.xml'
+                bat 'dotnet test -l:trx;LogFileName=TestExecutionResult.xml'
             }
         }
          stage("Stop Sonarqube Analysis") {
+            when {
+				branch 'master'
+			}
             steps {
                 echo "Stopping Sonarqube Analysis"
                 withSonarQubeEnv('SonarQube') {
@@ -50,6 +67,9 @@ pipeline {
             }
         }
         stage("Release artufact") {
+            when {
+				branch 'develop'
+			}
             steps {
                 echo "Release artifact step"
                 bat "dotnet publish -c Release -o ${appName}/app/${userName}"
@@ -57,10 +77,14 @@ pipeline {
         }
         stage("Kubernetes deployment") {
              steps {
-                bat 'gcloud compute zones list'
-                bat 'gcloud config set project gothic-dreamer-358719'
-                bat 'gcloud container clusters get-credentials kubernetes-demo --zone us-central1-c --project gothic-dreamer-358719'
-                bat 'kubectl apply -f deploymentAndService.yaml'
+                echo "powershell -Command ""(gc deploymentAndService.yaml) -replace 'tagBranch', '${env.BRANCH_NAME}' | Out-File -encoding ASCII deploymentAndService.yaml"""
+                bat "cat deploymentAndService.yaml"
+                bat "powershell -Command ""(gc deploymentAndService.yaml) -replace 'tagBranch', '${env.BRANCH_NAME}' | Out-File -encoding ASCII deploymentAndService.yaml"""
+                bat """
+                    gcloud config set project ${kubernetesProjectId}
+                    gcloud container clusters get-credentials ${kubernetesCluster} --zone us-central1-c --project ${kubernetesProjectId}
+                    kubectl apply -f deploymentAndService.yaml
+                """
             }
         }
     }
