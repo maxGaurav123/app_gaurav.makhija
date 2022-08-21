@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: special-config  # Need to be specified in the pod which will use this config map
+  namespace: namespace-k8s
+data:
+  SPECIAL_LEVEL: very
+  SPECIAL_TYPE: charm

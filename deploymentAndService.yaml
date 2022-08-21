@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: core-app-deployment
-  namespace: kubernetes-cluster-gauravmakhija
+  namespace: namespace-k8s
   labels:
     app: core-app
 spec:
@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: core-app
-          image: gauravmakhija9/i-gauravmakhija-tagBranch:latest
+          image: gauravmakhija9/i-gauravmakhija-imageOfBranch:latest
           ports:
             - name: http
               containerPort: 5000
@@ -47,7 +47,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: coreapp-lb-service
-  namespace: kubernetes-cluster-gauravmakhija
+  namespace: namespace-k8s
   labels:
     app: core-app-lb
 spec:
@@ -68,7 +68,7 @@ spec:
 apiVersion:  autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  namespace: kubernetes-cluster-gauravmakhija
+  namespace: namespace-k8s
   name: core-app-deployment-autoscale
 spec:
   scaleTargetRef:

@@ -8,6 +8,7 @@ pipeline {
         appName = 'SampleApp'
         kubernetesCluster = 'kubernetes-demo'
         kubernetesProjectId = 'gothic-dreamer-358719'
+        kubernetesNameSpace = 'kubernetes-cluster-gauravmakhija'
     }
 
     options {
@@ -25,7 +26,7 @@ pipeline {
         stage('Start') {
             steps {
                 echo 'Pulling...' + env.BRANCH_NAME
-                git branch: ${env.BRANCH_NAME}, changelog: false, poll: false, url: 'https://github.com/maxGaurav123/app_gaurav.makhija.git'
+                git branch: "${env.BRANCH_NAME}", changelog: false, poll: false, url: 'https://github.com/maxGaurav123/app_gaurav.makhija.git'
             }
         }
         stage('Nuget restore') {
@@ -77,14 +78,18 @@ pipeline {
         }
         stage("Kubernetes deployment") {
              steps {
-                echo "powershell -Command ""(gc deploymentAndService.yaml) -replace 'tagBranch', '${env.BRANCH_NAME}' | Out-File -encoding ASCII deploymentAndService.yaml"""
-                bat "cat deploymentAndService.yaml"
-                bat "powershell -Command ""(gc deploymentAndService.yaml) -replace 'tagBranch', '${env.BRANCH_NAME}' | Out-File -encoding ASCII deploymentAndService.yaml"""
-                bat """
-                    gcloud config set project ${kubernetesProjectId}
-                    gcloud container clusters get-credentials ${kubernetesCluster} --zone us-central1-c --project ${kubernetesProjectId}
-                    kubectl apply -f deploymentAndService.yaml
-                """
+                bat "gcloud config set project ${kubernetesProjectId}"
+                bat "gcloud container clusters get-credentials ${kubernetesCluster} --zone us-central1-c --project ${kubernetesProjectId}"
+
+                bat "powershell -Command \"(gc secrets.yaml) -replace 'namespace-k8s', '${kubernetesNameSpace}' | Out-File -encoding ASCII secrets.yaml\""
+                bat "powershell -Command \"(gc configMap.yaml) -replace 'namespace-k8s', '${kubernetesNameSpace}' | Out-File -encoding ASCII configMap.yaml\""
+                bat "powershell -Command \"(gc deploymentAndService.yaml) -replace 'namespace-k8s', '${kubernetesNameSpace}' | Out-File -encoding ASCII deploymentAndService.yaml\""
+
+                bat "powershell -Command \"(gc deploymentAndService.yaml) -replace 'imageOfBranch', '${env.BRANCH_NAME}' | Out-File -encoding ASCII deploymentAndService.yaml\""
+
+                bat "kubectl apply -f secrets.yaml"
+                bat "kubectl apply -f configMap.yaml"
+                bat "kubectl apply -f deploymentAndService.yaml"
             }
         }
     }
