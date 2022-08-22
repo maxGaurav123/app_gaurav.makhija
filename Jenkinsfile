@@ -6,8 +6,9 @@ pipeline {
         sonarProjectKey = 'sonar-gauravmakhija'
         username = 'admin'
         appName = 'SampleApp'
+        CLOUDSDK_CORE_PROJECT='gothic-dreamer-358719'
+        CLIENT_EMAIL='jenkins-cloud@gothic-dreamer-358719.iam.gserviceaccount.com'
         kubernetesCluster = 'kubernetes-demo'
-        kubernetesProjectId = 'gothic-dreamer-358719'
         kubernetesNameSpace = 'kubernetes-cluster-gauravmakhija'
     }
 
@@ -78,19 +79,29 @@ pipeline {
         }
         stage("Kubernetes deployment") {
              steps {
-                bat "gcloud config set project ${kubernetesProjectId}"
-                bat "gcloud container clusters get-credentials ${kubernetesCluster} --zone us-central1-c --project ${kubernetesProjectId}"
-
                 bat "powershell -Command \"(gc secrets.yaml) -replace 'namespace-k8s', '${kubernetesNameSpace}' | Out-File -encoding ASCII secrets.yaml\""
                 bat "powershell -Command \"(gc configMap.yaml) -replace 'namespace-k8s', '${kubernetesNameSpace}' | Out-File -encoding ASCII configMap.yaml\""
                 bat "powershell -Command \"(gc deploymentAndService.yaml) -replace 'namespace-k8s', '${kubernetesNameSpace}' | Out-File -encoding ASCII deploymentAndService.yaml\""
 
                 bat "powershell -Command \"(gc deploymentAndService.yaml) -replace 'imageOfBranch', '${env.BRANCH_NAME}' | Out-File -encoding ASCII deploymentAndService.yaml\""
 
-                bat "kubectl apply -f secrets.yaml"
-                bat "kubectl apply -f configMap.yaml"
-                bat "kubectl apply -f deploymentAndService.yaml"
+
+                withCredentials([file(credentialsId: 'gcloud_creds', variable: 'GCLOUD_CREDS')]) {
+                    bat "gcloud auth activate-service-account --key-file=\"$GCLOUD_CREDS\""
+
+                    bat "gcloud config set project ${CLOUDSDK_CORE_PROJECT}"
+                    bat "gcloud container clusters get-credentials ${kubernetesCluster} --zone us-central1-c --project ${CLOUDSDK_CORE_PROJECT}"
+
+                    bat "kubectl apply -f secrets.yaml"
+                    bat "kubectl apply -f configMap.yaml"
+                    bat "kubectl apply -f deploymentAndService.yaml"
+                }
             }
+        }
+    }
+    post {
+        always {
+            bat "gcloud auth revoke $CLIENT_EMAIL"
         }
     }
 }
