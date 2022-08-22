@@ -27,7 +27,7 @@ pipeline {
         stage('Start') {
             steps {
                 echo 'Pulling...' + env.BRANCH_NAME
-                git branch: "${env.BRANCH_NAME}", changelog: false, poll: false, url: 'https://github.com/maxGaurav123/app_gaurav.makhija.git'
+                git branch: "${env.BRANCH_NAME}", changelog: false, poll: false, url: 'https://github.com/maxGaurav123/app_gauravmakhija.git'
             }
         }
         stage('Nuget restore') {
